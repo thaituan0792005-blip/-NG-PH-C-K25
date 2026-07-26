@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bảng kê chuyển khoản</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F7F6;
+    --surface:#FFFFFF;
+    --ink:#16302A;
+    --ink-soft:#4B615A;
+    --primary:#0E6B55;
+    --primary-dark:#0A4F3F;
+    --accent:#E7A33E;
+    --line:#D8E3DF;
+    --danger:#C0392B;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:960px;margin:0 auto;padding:28px 20px 80px;}
+
+  header.top{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    margin-bottom:26px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:20px;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--primary);
+    font-weight:600;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:30px;
+    margin:2px 0 0;
+    color:var(--ink);
+  }
+  .sub{
+    color:var(--ink-soft);
+    font-size:14px;
+    margin-top:2px;
+  }
+
+  /* ---- Summary strip ---- */
+  .summary{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:1px;
+    background:var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+    margin-bottom:28px;
+    box-shadow:0 1px 2px rgba(16,48,40,.04);
+  }
+  .summary .cell{
+    background:var(--surface);
+    padding:18px 20px;
+  }
+  .summary .cell.hero{
+    background:var(--primary);
+    color:#fff;
+  }
+  .summary .label{
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    font-weight:600;
+    opacity:.75;
+  }
+  .summary .value{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:24px;
+    margin-top:6px;
+    letter-spacing:-0.01em;
+  }
+  .summary .cell.hero .value{font-size:28px;}
+
+  /* ---- Form (receipt slip) ---- */
+  .slip{
+    background:var(--surface);
+    border-radius:var(--radius);
+    padding:24px;
+    margin-bottom:34px;
+    box-shadow:0 1px 3px rgba(16,48,40,.06);
+    position:relative;
+  }
+  .slip h2{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:17px;
+    margin:0 0 16px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .slip h2 .dot{
+    width:8px;height:8px;border-radius:50%;background:var(--accent);
+    display:inline-block;
+  }
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:560px){.grid2{grid-template-columns:1fr;}}
+
+  label{
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink-soft);
+    display:block;
+    margin-bottom:6px;
+  }
+  input[type=text],input[type=number],input[type=datetime-local]{
+    width:100%;
+    padding:11px 12px;
+    border:1px solid var(--line);
+    border-radius:9px;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    color:var(--ink);
+    background:#FBFCFC;
+    outline:none;
+    transition:border-color .15s;
+  }
+  input:focus{border-color:var(--primary);}
+  .field{margin-bottom:14px;}
+
+  .drop{
+    border:1.5px dashed var(--line);
+    border-radius:10px;
+    padding:18px;
+    text-align:center;
+    cursor:pointer;
+    background:#FBFCFC;
+    transition:border-color .15s,background .15s;
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+  .drop:hover{border-color:var(--primary);background:#F1F8F5;}
+  .drop.has-img{padding:10px;}
+  .drop img{max-height:140px;border-radius:8px;display:block;margin:0 auto;}
+  input[type=file]{display:none;}
+
+  button.submit{
+    margin-top:6px;
+    width:100%;
+    background:var(--primary);
+    color:#fff;
+    border:none;
+    padding:13px 18px;
+    border-radius:9px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:14px;
+    letter-spacing:.01em;
+    cursor:pointer;
+    transition:background .15s;
+  }
+  button.submit:hover{background:var(--primary-dark);}
+  button.submit:disabled{background:#A9BDB6;cursor:not-allowed;}
+
+  .error{
+    color:var(--danger);
+    font-size:12.5px;
+    margin-top:8px;
+    display:none;
+  }
+  .toast{
+    display:none;
+    margin-top:8px;
+    font-size:12.5px;
+    color:var(--primary-dark);
+    font-weight:600;
+  }
+
+  /* ---- Ledger list ---- */
+  .ledger-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:14px;
+  }
+  .ledger-head h2{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:17px;
+    margin:0;
+  }
+  .refresh{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--ink-soft);
+    font-size:12px;
+    padding:7px 12px;
+    border-radius:20px;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .refresh:hover{border-color:var(--primary);color:var(--primary);}
+
+  .empty{
+    text-align:center;
+    padding:50px 20px;
+    color:var(--ink-soft);
+    font-size:14px;
+    background:var(--surface);
+    border-radius:var(--radius);
+    border:1px dashed var(--line);
+  }
+
+  .receipt{
+    background:var(--surface);
+    border-radius:12px;
+    padding:16px;
+    display:grid;
+    grid-template-columns:64px 1fr auto;
+    gap:14px;
+    align-items:center;
+    margin-bottom:10px;
+    box-shadow:0 1px 2px rgba(16,48,40,.05);
+    position:relative;
+  }
+  .thumb{
+    width:64px;height:64px;border-radius:8px;object-fit:cover;
+    cursor:pointer;
+    border:1px solid var(--line);
+    background:#F1F3F2;
+  }
+  .r-name{font-weight:600;font-size:14px;color:var(--ink);}
+  .r-meta{font-size:12px;color:var(--ink-soft);margin-top:2px;font-family:'IBM Plex Mono',monospace;}
+  .r-note{font-size:12px;color:var(--ink-soft);margin-top:3px;font-style:italic;}
+  .r-amount{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:15px;
+    color:var(--primary-dark);
+    text-align:right;
+  }
+  .r-del{
+    position:absolute;
+    top:8px;right:8px;
+    background:none;border:none;color:#B9C6C1;
+    font-size:11px;cursor:pointer;padding:4px;
+  }
+  .r-del:hover{color:var(--danger);}
+
+  .stamp{
+    position:absolute;
+    top:14px;right:60px;
+    border:1.5px solid var(--accent);
+    color:var(--accent);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:9px;
+    font-weight:600;
+    letter-spacing:.08em;
+    padding:3px 7px;
+    border-radius:4px;
+    transform:rotate(6deg);
+    opacity:.85;
+  }
+
+  /* modal */
+  .modal{
+    display:none;
+    position:fixed;inset:0;
+    background:rgba(16,48,40,.72);
+    align-items:center;justify-content:center;
+    z-index:50;
+    padding:24px;
+  }
+  .modal.open{display:flex;}
+  .modal img{max-width:100%;max-height:85vh;border-radius:10px;}
+  .modal-close{
+    position:absolute;top:20px;right:24px;
+    color:#fff;font-size:26px;cursor:pointer;
+    background:none;border:none;
+  }
+
+  .note-shared{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    margin-top:18px;
+    text-align:center;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <span class="eyebrow">Sổ thu tiền · Chuyển khoản</span>
+    <h1>Bảng kê chuyển khoản</h1>
+    <p class="sub">Người chuyển tự nhập thông tin và đính kèm ảnh chứng minh đã chuyển — hệ thống tự tổng hợp.</p>
+  </header>
+
+  <section class="summary" id="summary">
+    <div class="cell hero">
+      <div class="label">Tổng đã nhận</div>
+      <div class="value" id="sumTotal">0đ</div>
+    </div>
+    <div class="cell">
+      <div class="label">Số lượt chuyển</div>
+      <div class="value" id="sumCount">0</div>
+    </div>
+    <div class="cell">
+      <div class="label">Trung bình / lượt</div>
+      <div class="value" id="sumAvg">0đ</div>
+    </div>
+  </section>
+
+  <div class="slip">
+    <h2><span class="dot"></span>Gửi minh chứng chuyển khoản</h2>
+    <div class="grid2">
+      <div class="field">
+        <label for="fName">Họ tên người chuyển</label>
+        <input type="text" id="fName" placeholder="Nguyễn Văn A">
+      </div>
+      <div class="field">
+        <label for="fAmount">Số tiền đã chuyển (đ)</label>
+        <input type="number" id="fAmount" placeholder="500000" min="0">
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label for="fDate">Thời gian chuyển</label>
+        <input type="datetime-local" id="fDate">
+      </div>
+      <div class="field">
+        <label for="fNote">Nội dung / Ghi chú (không bắt buộc)</label>
+        <input type="text" id="fNote" placeholder="VD: Thanh toán tiền khám">
+      </div>
+    </div>
+    <div class="field">
+      <label>Ảnh chứng minh đã chuyển khoản</label>
+      <div class="drop" id="dropZone">
+        <span id="dropLabel">Nhấn để chọn ảnh (chụp màn hình biên lai chuyển khoản)</span>
+      </div>
+      <input type="file" id="fImage" accept="image/*">
+    </div>
+    <button class="submit" id="btnSubmit">Gửi minh chứng</button>
+    <div class="error" id="errMsg"></div>
+    <div class="toast" id="okMsg">✓ Đã ghi nhận, cảm ơn bạn!</div>
+  </div>
+
+  <div class="ledger-head">
+    <h2>Danh sách đã gửi</h2>
+    <button class="refresh" id="btnRefresh">↻ Làm mới</button>
+  </div>
+  <div id="ledger"></div>
+
+  <p class="note-shared">Dữ liệu ở đây được lưu chung — tất cả người có liên kết này đều xem được danh sách và tổng kết.</p>
+</div>
+
+<div class="modal" id="modal">
+  <button class="modal-close" id="modalClose">×</button>
+  <img id="modalImg" src="" alt="Ảnh chứng minh">
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => Math.round(n).toLocaleString('vi-VN') + 'đ';
+
+// default datetime to now
+function setNowDefault(){
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  $('fDate').value = now.toISOString().slice(0,16);
+}
+setNowDefault();
+
+let pendingImage = null;
+
+$('dropZone').addEventListener('click', () => $('fImage').click());
+$('fImage').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      const maxW = 900;
+      const scale = Math.min(1, maxW / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      pendingImage = canvas.toDataURL('image/jpeg', 0.72);
+      $('dropZone').classList.add('has-img');
+      $('dropZone').innerHTML = `<img src="${pendingImage}">`;
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+$('btnSubmit').addEventListener('click', async () => {
+  const name = $('fName').value.trim();
+  const amount = parseFloat($('fAmount').value);
+  const dateVal = $('fDate').value;
+  const note = $('fNote').value.trim();
+  const errEl = $('errMsg');
+  const okEl = $('okMsg');
+  errEl.style.display = 'none';
+  okEl.style.display = 'none';
+
+  if (!name || !amount || amount <= 0 || !dateVal || !pendingImage) {
+    errEl.textContent = 'Vui lòng nhập đủ họ tên, số tiền, thời gian và đính kèm ảnh chứng minh.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const btn = $('btnSubmit');
+  btn.disabled = true;
+  btn.textContent = 'Đang gửi...';
+
+  const id = Date.now() + '_' + Math.random().toString(36).slice(2,8);
+  const entry = { name, amount, date: dateVal, note, image: pendingImage, submittedAt: new Date().toISOString() };
+
+  try {
+    const res = await window.storage.set('transfer:' + id, JSON.stringify(entry), true);
+    if (!res) throw new Error('failed');
+    okEl.style.display = 'block';
+    // reset form
+    $('fName').value = '';
+    $('fAmount').value = '';
+    $('fNote').value = '';
+    setNowDefault();
+    pendingImage = null;
+    $('dropZone').classList.remove('has-img');
+    $('dropZone').innerHTML = '<span>Nhấn để chọn ảnh (chụp màn hình biên lai chuyển khoản)</span>';
+    $('fImage').value = '';
+    await loadLedger();
+  } catch (err) {
+    errEl.textContent = 'Có lỗi khi lưu, vui lòng thử lại.';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Gửi minh chứng';
+  }
+});
+
+async function loadLedger(){
+  const ledgerEl = $('ledger');
+  ledgerEl.innerHTML = '<div class="empty">Đang tải...</div>';
+  let keysRes;
+  try {
+    keysRes = await window.storage.list('transfer:', true);
+  } catch (e) {
+    ledgerEl.innerHTML = '<div class="empty">Không tải được dữ liệu. Nhấn "Làm mới" để thử lại.</div>';
+    return;
+  }
+  const keys = (keysRes && keysRes.keys) ? keysRes.keys : [];
+  if (keys.length === 0) {
+    ledgerEl.innerHTML = '<div class="empty">Chưa có lượt chuyển khoản nào được gửi.</div>';
+    updateSummary([]);
+    return;
+  }
+
+  const entries = [];
+  for (const k of keys) {
+    try {
+      const r = await window.storage.get(k, true);
+      if (r && r.value) {
+        const parsed = JSON.parse(r.value);
+        parsed._key = k;
+        entries.push(parsed);
+      }
+    } catch (e) { /* skip missing */ }
+  }
+  entries.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+  ledgerEl.innerHTML = '';
+  for (const en of entries) {
+    const div = document.createElement('div');
+    div.className = 'receipt';
+    const dt = new Date(en.date);
+    const dtStr = isNaN(dt) ? en.date : dt.toLocaleString('vi-VN', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    div.innerHTML = `
+      <img class="thumb" src="${en.image}" data-img="${en.image}">
+      <div>
+        <div class="r-name">${escapeHtml(en.name)}</div>
+        <div class="r-meta">${dtStr}</div>
+        ${en.note ? `<div class="r-note">${escapeHtml(en.note)}</div>` : ''}
+      </div>
+      <div class="r-amount">${fmt(en.amount)}</div>
+      <button class="r-del" data-key="${en._key}" title="Xoá mục này">Xoá</button>
+      <div class="stamp">ĐÃ GỬI</div>
+    `;
+    ledgerEl.appendChild(div);
+  }
+
+  ledgerEl.querySelectorAll('.thumb').forEach(el => {
+    el.addEventListener('click', () => openModal(el.dataset.img));
+  });
+  ledgerEl.querySelectorAll('.r-del').forEach(el => {
+    el.addEventListener('click', async (e) => {
+      const key = e.target.dataset.key;
+      if (!confirm('Xoá mục này khỏi bảng kê?')) return;
+      try {
+        await window.storage.delete(key, true);
+        await loadLedger();
+      } catch (err) { alert('Không xoá được, thử lại sau.'); }
+    });
+  });
+
+  updateSummary(entries);
+}
+
+function updateSummary(entries){
+  const total = entries.reduce((s,e) => s + (parseFloat(e.amount)||0), 0);
+  const count = entries.length;
+  const avg = count ? total / count : 0;
+  $('sumTotal').textContent = fmt(total);
+  $('sumCount').textContent = count.toLocaleString('vi-VN');
+  $('sumAvg').textContent = fmt(avg);
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function openModal(src){
+  $('modalImg').src = src;
+  $('modal').classList.add('open');
+}
+$('modalClose').addEventListener('click', () => $('modal').classList.remove('open'));
+$('modal').addEventListener('click', (e) => { if (e.target.id === 'modal') $('modal').classList.remove('open'); });
+
+$('btnRefresh').addEventListener('click', loadLedger);
+
+loadLedger();
+</script>
+</body>
+</html>
